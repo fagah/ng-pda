@@ -1,0 +1,10 @@
+<div class="modal-header">
+    <h4 class="modal-title">Incoming Call</h4>
+</div>
+<div class="modal-body">
+    <p>You have an incoming call from Station ID: {{ caller }}</p>
+</div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-success" (click)="accept()">Accept</button>
+    <button type="button" class="btn btn-danger" (click)="decline()">Decline</button>
+</div>

@@ -1,0 +1,49 @@
+<div class="container p-5">
+    <h3 class="text-center text-danger">Agent Screen</h3>
+    <div class="row mt-5">
+      <div class="col-md-12">
+        <p>Local Stream exists ? {{!localStream}}</p>
+      </div>
+    </div>
+    <div class="row mt-5">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                  <h5 class="card-title">Station Video 
+                      <span class="badge rounded-pill text-bg-primary">#{{currentUser.stationId}}</span>
+                  </h5>
+                </div>
+                <div class="card-body">
+                  <video #agentLocalVideo autoplay muted class="video-feed" [srcObject]="webRTCService.getLocalStream() | async"></video>
+                  <audio #agentRingtoneAudio src="ringtones/come_back.mp3" preload="auto"></audio>
+                </div>
+                <!--<div class="card-footer">
+                  <button [ngClass]="{'btn-danger': !isCameraOn, 'btn-secondary': isCameraOn}" class="btn rounded-circle" (click)="toggleCamera()">
+                    <fa-icon [icon]="isCameraOn ? 'video' : 'video-slash'"></fa-icon>
+                  </button>
+                  <button [ngClass]="{'btn-danger': !isMicOn, 'btn-secondary': isMicOn}" class="btn rounded-circle" (click)="toggleMic()">
+                    <fa-icon [icon]="isMicOn ? 'microphone' : 'microphone-slash'"></fa-icon>
+                  </button>
+                </div>-->
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                  <h5 class="card-title">Remote Video</h5>
+                </div>
+                <div class="card-body">
+                  <video #peerReceivedVideo autoplay class="video-feed" [srcObject]="webRTCService.getRemoteStream() | async"></video>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="d-flex justify-content-center mb-3">
+    <!--<button class="btn btn-primary me-2" (click)="startLocalVideo()" [disabled]="localVideoActive">Start Local</button>
+    <button class="btn btn-secondary me-2" (click)="pauseLocalVideo()" [disabled]="!localVideoActive">Stop Local</button>
+    <button class="btn btn-success me-2" (click)="acceptCall()" [disabled]="!callOfferReceived || !localVideoActive">Accept</button>
+    <button class="btn btn-warning me-2" (click)="declineCall()" [disabled]="!callOfferReceived || !localVideoActive">Decline</button>
+    <button class="btn btn-success me-2" (click)="initiateCall()" [disabled]="isCalling">Call</button>-->
+    <button class="btn btn-danger" (click)="hangUp()" [disabled]="isCalling">Hang Up</button>
+</div>

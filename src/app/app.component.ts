@@ -1,289 +1,295 @@
-import { Component, ElementRef, ViewChild } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { AfterViewInit, Component, ElementRef, OnDestroy, ViewChild } from '@angular/core';
+import { Router, RouterLink, RouterOutlet } from '@angular/router';
 import { RTCPeerConfiguration } from './app.constants';
 import { DataService, IMessage } from './services/data.service';
+import { RxStompService } from './services/rx-stomp.service';
+import { CommonModule } from '@angular/common';
+import { Subscription } from 'rxjs';
+import { filter, map } from 'rxjs/operators';
+import { SharedModule } from './shared/shared.module';
+import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
+import { UserDetailComponent } from './user-detail/user-detail.component';
 
 export const ENV_RTCPeerConfiguration = RTCPeerConfiguration;
 
 const mediaConstraints = {
   audio: true,
-  video: { width: 1280, height: 720 }
-  // video: {width: 1280, height: 720} // 16:9
-  // video: {width: 960, height: 540}  // 16:9
-  // video: {width: 640, height: 480}  //  4:3
-  // video: {width: 160, height: 120}  //  4:3
+  video: { width: 1280, height: 720 },
 };
 
 const offerOptions = {
   offerToReceiveAudio: true,
-  offerToReceiveVideo: true
+  offerToReceiveVideo: true,
 };
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, RouterLink, CommonModule, SharedModule],
   templateUrl: './app.component.html',
-  styleUrl: './app.component.scss'
+  styleUrls: ['./app.component.scss'],
+  providers: [NgbActiveModal],
 })
-export class AppComponent {
+export class AppComponent 
+// implements AfterViewInit, OnDestroy 
+{
   title = 'ng-pda';
+  currentUserJson = JSON.parse(localStorage.getItem('currentUser') || '{}');
 
-  @ViewChild('local_video') localVideo!: ElementRef;
-  @ViewChild('received_video') remoteVideo!: ElementRef;
-
-  private peerConnection: RTCPeerConnection | null = null;
-  private localStream: MediaStream | null = null;
-
-  inCall = false;
-  localVideoActive = false;
-
-  constructor(private dataService: DataService) { }
-
-  async call(): Promise<void> {
-    this.createPeerConnection();
-
-    // Add the tracks from the local stream to the RTCPeerConnection
-    if( !this.localStream || !this.peerConnection ) {
-      console.log('no local stream or peer connection');
-      return;
-
-    }
-    this.localStream.getTracks().forEach(
-      track => this.peerConnection!.addTrack(track, this.localStream!)
-    );
-
-    try {
-      const offer: RTCSessionDescriptionInit = await this.peerConnection.createOffer(offerOptions);
-      // Establish the offer as the local peer's current description.
-      await this.peerConnection.setLocalDescription(offer);
-
-      this.inCall = true;
-
-      this.dataService.sendMessage({ type: 'offer', data: offer });
-    } catch (err: any) {
-      this.handleGetUserMediaError(err);
+  constructor(private router: Router, private modalService: NgbModal,) {
+    // const currentUserJson = JSON.parse(localStorage.getItem('currentUser')||'');
+    if( this.currentUserJson && this.currentUserJson.stationGroup){
+      this.navigateTo(this.currentUserJson.stationGroup);
+    } else {
+      this.gatherCurrentUserInfo();
     }
   }
+  // private messagesSubscription?: Subscription;
+  // @ViewChild('local_video') localVideo!: ElementRef;
+  // @ViewChild('received_video') remoteVideo!: ElementRef;
 
-  hangUp(): void {
-    this.dataService.sendMessage({ type: 'hangup', data: '' });
-    this.closeVideoCall();
-  }
+  // private peerConnection: RTCPeerConnection | null = null;
+  // private localStream: MediaStream | null = null;
 
-  ngAfterViewInit(): void {
-    this.addIncominMessageHandler();
-    this.requestMediaDevices();
-  }
+  // inCall = false;
+  // localVideoActive = false;
+  // isCameraOn: boolean = true;
+  // isMicOn: boolean = true;
+  // stationId?: string;
+  // stationGroup?: string;
 
-  private addIncominMessageHandler(): void {
-    this.dataService.connect();
+  // constructor(
+  //   private dataService: DataService,
+  //   private rxStompService: RxStompService,
+  //   private modalService: NgbModal,
+  // ) {}
 
-    // this.transactions$.subscribe();
-    this.dataService.messages$.subscribe(
-      msg => {
-        // console.log('Received message: ' + msg.type);
-        switch (msg.type) {
-          case 'offer':
-            this.handleOfferMessage(msg.data);
-            break;
-          case 'answer':
-            this.handleAnswerMessage(msg.data);
-            break;
-          case 'hangup':
-            this.handleHangupMessage(msg);
-            break;
-          case 'ice-candidate':
-            this.handleICECandidateMessage(msg.data);
-            break;
-          default:
-            console.log('unknown message of type ' + msg.type);
-        }
-      },
-      error => console.log(error)
-    );
-  }
+  // ngAfterViewInit(): void {
+    
+  //   if (!this.stationId && !this.stationGroup) {
+  //     this.gatherCurrentUserInfo();
+  //   } else {
+  //     this.addIncomingMessageHandler();
+  //     this.requestMediaDevices();
+  //   }
 
-  /* ########################  MESSAGE HANDLER  ################################## */
+  // }
 
-  private handleOfferMessage(msg: RTCSessionDescriptionInit): void {
-    console.log('handle incoming offer');
-    if (!this.peerConnection) {
-      this.createPeerConnection();
-    }
+  // ngOnDestroy(): void {
+  //   if (this.messagesSubscription) {
+  //     this.messagesSubscription.unsubscribe();
+  //     this.dataService.disconnect();
+  //   }
+  // }
 
-    if (!this.localStream) {
-      this.startLocalVideo();
-    }
-
-    this.peerConnection?.setRemoteDescription(new RTCSessionDescription(msg))
-      .then(() => {
-
-        // add media stream to local video
-        this.localVideo.nativeElement.srcObject = this.localStream;
-
-        // add media tracks to remote connection
-        this.localStream?.getTracks().forEach(
-          track => this.peerConnection?.addTrack(track, this.localStream!)
-        );
-
-      }).then(() => {
-
-        // Build SDP for answer message
-        return this.peerConnection?.createAnswer();
-
-      }).then((answer) => {
-
-        // Set local SDP
-        return this.peerConnection?.setLocalDescription(answer);
-
-      }).then(() => {
-
-        // Send local SDP to remote party
-        this.dataService.sendMessage({ type: 'answer', data: this.peerConnection?.localDescription });
-
-        this.inCall = true;
-
-      }).catch(this.handleGetUserMediaError);
-  }
-
-  private handleAnswerMessage(msg: RTCSessionDescriptionInit): void {
-    console.log('handle incoming answer');
-    this.peerConnection?.setRemoteDescription(msg);
-  }
-
-  private handleHangupMessage(msg: IMessage): void {
-    console.log(msg);
-    this.closeVideoCall();
-  }
-
-  private handleICECandidateMessage(msg: RTCIceCandidate): void {
-    const candidate = new RTCIceCandidate(msg);
-    this.peerConnection?.addIceCandidate(candidate).catch(this.reportError);
-  }
-
-  private async requestMediaDevices(): Promise<void> {
-    try {
-      this.localStream = await navigator.mediaDevices.getUserMedia(mediaConstraints!);
-      // pause all tracks
-      this.pauseLocalVideo();
-    } catch (e: any) {
-      console.error(e);
-      alert(`getUserMedia() error: ${e.name}`);
-    }
-  }
-
-  startLocalVideo(): void {
-    console.log('starting local stream');
-    this.localStream?.getTracks().forEach(track => {
-      track.enabled = true;
+  gatherCurrentUserInfo(): void {
+    const modalRef = this.modalService.open(UserDetailComponent,{
+      backdrop: 'static',
+      keyboard: false,
+      size: 'md'
     });
-    this.localVideo.nativeElement.srcObject = this.localStream;
 
-    this.localVideoActive = true;
-  }
+    modalRef.componentInstance.userDetail = { stationId: this.currentUserJson.stationId, stationGroup: this.currentUserJson.stationGroup };
 
-  pauseLocalVideo(): void {
-    console.log('pause local stream');
-    this.localStream?.getTracks().forEach(track => {
-      track.enabled = false;
+    modalRef.result.then(async (result) => {
+      if (result !== null) {
+        this.currentUserJson = result;
+        localStorage.setItem('currentUser', JSON.stringify(result));
+        this.navigateTo(result.stationGroup);
+      }
+    }, (reason) => {
+      console.log('Dismissed : ', reason);
     });
-    this.localVideo.nativeElement.srcObject = undefined;
-
-    this.localVideoActive = false;
   }
 
-  private createPeerConnection(): void {
-    console.log('creating PeerConnection...');
-    this.peerConnection = new RTCPeerConnection(ENV_RTCPeerConfiguration);
-
-    this.peerConnection.onicecandidate = this.handleICECandidateEvent;
-    this.peerConnection.oniceconnectionstatechange = this.handleICEConnectionStateChangeEvent;
-    this.peerConnection.onsignalingstatechange = this.handleSignalingStateChangeEvent;
-    this.peerConnection.ontrack = this.handleTrackEvent;
-  }
-
-  private closeVideoCall(): void {
-    console.log('Closing call');
-
-    if (this.peerConnection) {
-      console.log('--> Closing the peer connection');
-
-      this.peerConnection.ontrack = null;
-      this.peerConnection.onicecandidate = null;
-      this.peerConnection.oniceconnectionstatechange = null;
-      this.peerConnection.onsignalingstatechange = null;
-
-      // Stop all transceivers on the connection
-      this.peerConnection.getTransceivers().forEach(transceiver => {
-        transceiver.stop();
-      });
-
-      // Close the peer connection
-      this.peerConnection.close();
-      this.peerConnection = null;
-
-      this.inCall = false;
-    }
-  }
-
-  /* ########################  ERROR HANDLER  ################################## */
-  private handleGetUserMediaError(e: Error): void {
-    switch (e.name) {
-      case 'NotFoundError':
-        alert('Unable to open your call because no camera and/or microphone were found.');
+  private navigateTo(currentUserRole: string){
+    switch (currentUserRole) {
+      case 'passenger':
+        this.router.navigate(['/passenger-ui']);
         break;
-      case 'SecurityError':
-      case 'PermissionDeniedError':
-        // Do nothing; this is the same as the user canceling the call.
+      case 'agent':
+        this.router.navigate(['/agent-ui']);
         break;
       default:
-        console.log(e);
-        alert('Error opening your camera and/or microphone: ' + e.message);
-        break;
-    }
-
-    this.closeVideoCall();
-  }
-
-  private reportError = (e: Error) => {
-    console.log('got Error: ' + e.name);
-    console.log(e);
-  }
-
-  /* ########################  EVENT HANDLER  ################################## */
-  private handleICECandidateEvent = (event: RTCPeerConnectionIceEvent) => {
-    console.log(event);
-    if (event.candidate) {
-      this.dataService.sendMessage({
-        type: 'ice-candidate',
-        data: event.candidate
-      });
-    }
-  }
-
-  private handleICEConnectionStateChangeEvent = (event: Event) => {
-    console.log(event);
-    switch (this.peerConnection?.iceConnectionState) {
-      case 'closed':
-      case 'failed':
-      case 'disconnected':
-        this.closeVideoCall();
+        alert('Unknown role');
         break;
     }
   }
 
-  private handleSignalingStateChangeEvent = (event: Event) => {
-    console.log(event);
-    switch (this.peerConnection?.signalingState) {
-      case 'closed':
-        this.closeVideoCall();
-        break;
-    }
-  }
+  // async call(): Promise<void> {
+  //   this.createPeerConnection();
+  //   if (!this.localStream || !this.peerConnection) {
+  //     console.log('No local stream or peer connection');
+  //     return;
+  //   }
+  //   this.localStream.getTracks().forEach(track => this.peerConnection!.addTrack(track, this.localStream!));
 
-  private handleTrackEvent = (event: RTCTrackEvent) => {
-    console.log(event);
-    this.remoteVideo.nativeElement.srcObject = event.streams[0];
-  }
+  //   try {
+  //     const offer = await this.peerConnection.createOffer(offerOptions);
+  //     await this.peerConnection.setLocalDescription(offer);
+  //     this.inCall = true;
+  //     this.rxStompService.publish({ destination: '/topic/passenger/offer', body: JSON.stringify({ stationId: this.stationId, type: 'offer', data: offer }) });
+  //   } catch (err: any) {
+  //     this.handleGetUserMediaError(err);
+  //   }
+  // }
+
+  // hangUp(): void {
+  //   this.rxStompService.publish({ destination: '/topic/hangup', body: JSON.stringify({stationId: this.stationId, type: 'hangup', data: '' }) });
+  //   this.closeVideoCall();
+  // }
+
+  // toggleCamera(): void {
+  //   if (this.localStream) {
+  //     this.isCameraOn = !this.isCameraOn;
+  //     this.localStream.getVideoTracks().forEach(track => (track.enabled = this.isCameraOn));
+  //   }
+  // }
+
+  // toggleMic(): void {
+  //   if (this.localStream) {
+  //     this.isMicOn = !this.isMicOn;
+  //     this.localStream.getAudioTracks().forEach(track => (track.enabled = this.isMicOn));
+  //   }
+  // }
+
+  // startLocalVideo(): void {
+  //   console.log('starting local stream');
+  //   this.localStream?.getTracks().forEach(track => {
+  //     track.enabled = true;
+  //   });
+  //   this.localVideo.nativeElement.srcObject = this.localStream;
+
+  //   this.localVideoActive = true;
+  // }
+
+  // pauseLocalVideo(): void {
+  //   console.log('pause local stream');
+  //   this.localStream?.getTracks().forEach(track => {
+  //     track.enabled = false;
+  //   });
+  //   this.localVideo.nativeElement.srcObject = undefined;
+
+  //   this.localVideoActive = false;
+  // }
+
+  // private addIncomingMessageHandler(): void {
+  //   this.messagesSubscription = this.rxStompService
+  //     .watch('/topic/messages')
+  //     .pipe(
+  //       map(message => JSON.parse(message.body)),
+  //       filter((msg: IMessage) => !!msg)
+  //     )
+  //     .subscribe((msg: IMessage) => {
+  //       switch (msg.type) {
+  //         case 'offer':
+  //           this.handleOfferMessage(msg.data);
+  //           break;
+  //         case 'answer':
+  //           this.handleAnswerMessage(msg.data);
+  //           break;
+  //         case 'hangup':
+  //           this.handleHangupMessage();
+  //           break;
+  //         case 'ice-candidate':
+  //           this.handleICECandidateMessage(msg.data);
+  //           break;
+  //         default:
+  //           console.log(`Unknown message type: ${msg.type}`);
+  //       }
+  //     }, error => console.error(error));
+  // }
+
+  // private async requestMediaDevices(): Promise<void> {
+  //   try {
+  //     this.localStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
+  //     this.pauseLocalVideo();
+  //   } catch (e: any) {
+  //     console.error(`getUserMedia() error: ${e.name}`);
+  //     alert(`Error accessing camera/microphone: ${e.message}`);
+  //   }
+  // }
+
+  // private createPeerConnection(): void {
+  //   console.log('Creating PeerConnection...');
+  //   this.peerConnection = new RTCPeerConnection(ENV_RTCPeerConfiguration);
+  //   this.peerConnection.onicecandidate = this.handleICECandidateEvent;
+  //   this.peerConnection.oniceconnectionstatechange = this.handleICEConnectionStateChangeEvent;
+  //   this.peerConnection.onsignalingstatechange = this.handleSignalingStateChangeEvent;
+  //   this.peerConnection.ontrack = this.handleTrackEvent;
+  // }
+
+  // private handleOfferMessage(msg: RTCSessionDescriptionInit): void {
+  //   if (!this.peerConnection) {
+  //     this.createPeerConnection();
+  //   }
+  //   this.peerConnection
+  //     ?.setRemoteDescription(new RTCSessionDescription(msg))
+  //     .then(() => this.peerConnection?.createAnswer())
+  //     .then(answer => {
+  //       return this.peerConnection?.setLocalDescription(answer);
+  //     })
+  //     .then(() => {
+  //       this.rxStompService.publish({ destination: '/topic/answer', body: JSON.stringify({ stationId: this.stationId, type: 'answer', data: this.peerConnection?.localDescription }) });
+  //       this.inCall = true;
+  //     })
+  //     .catch(this.handleGetUserMediaError);
+  // }
+
+  // private handleAnswerMessage(msg: RTCSessionDescriptionInit): void {
+  //   this.peerConnection?.setRemoteDescription(msg);
+  // }
+
+  // private handleHangupMessage(): void {
+  //   this.closeVideoCall();
+  // }
+
+  // private handleICECandidateMessage(msg: RTCIceCandidate): void {
+  //   const candidate = new RTCIceCandidate(msg);
+  //   this.peerConnection?.addIceCandidate(candidate).catch(this.reportError);
+  // }
+
+  // private closeVideoCall(): void {
+  //   if (this.peerConnection) {
+  //     this.peerConnection.getTransceivers().forEach(transceiver => transceiver.stop());
+  //     this.peerConnection.close();
+  //     this.peerConnection = null;
+  //     this.inCall = false;
+  //   }
+  // }
+
+  // private handleGetUserMediaError(error: Error): void {
+  //   console.error('Error accessing media:', error);
+  //   this.closeVideoCall();
+  // }
+
+  // private reportError = (error: Error) => {
+  //   console.error('WebRTC error:', error);
+  // }
+
+  // private handleICECandidateEvent = (event: RTCPeerConnectionIceEvent) => {
+  //   if (event.candidate) {
+  //     this.rxStompService.publish({ destination: '/topic/ice-candidate', body: JSON.stringify({ type: 'ice-candidate', data: event.candidate }) });
+  //   }
+  // }
+
+  // private handleICEConnectionStateChangeEvent = () => {
+  //   switch (this.peerConnection?.iceConnectionState) {
+  //     case 'closed':
+  //     case 'failed':
+  //     case 'disconnected':
+  //       this.closeVideoCall();
+  //       break;
+  //   }
+  // }
+
+  // private handleSignalingStateChangeEvent = () => {
+  //   if (this.peerConnection?.signalingState === 'closed') {
+  //     this.closeVideoCall();
+  //   }
+  // }
+
+  // private handleTrackEvent = (event: RTCTrackEvent) => {
+  //   this.remoteVideo.nativeElement.srcObject = event.streams[0];
+  // }
 }

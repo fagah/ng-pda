@@ -1,0 +1,56 @@
+<div class="container mt-4">
+    <!-- Video Call Section -->
+    <div class="row justify-content-center mb-4">
+      <div class="col-md-6">
+        <!-- Local Video Stream -->
+        <div class="card">
+          <div class="card-header">
+            <h3>Your Video</h3>
+          </div>
+          <div class="card-body">
+            <video #localVideo class="w-100" autoplay muted></video>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <!-- Remote Video Stream -->
+        <div class="card">
+          <div class="card-header">
+            <h3>Agent's Video</h3>
+          </div>
+          <div class="card-body">
+            <video #remoteVideo class="w-100" autoplay></video>
+          </div>
+        </div>
+      </div>
+    </div>
+  
+    <!-- Call Controls -->
+    <div class="d-flex justify-content-center">
+      <button 
+        *ngIf="!isInCall" 
+        class="btn btn-primary mx-2" 
+        (click)="startCall()">
+        Start Call
+      </button>
+      <button 
+        *ngIf="isInCall" 
+        class="btn btn-danger mx-2" 
+        (click)="endCall(user.stationId)">
+        End Call
+      </button>
+    </div>
+  
+    <!-- Incoming Call Notification -->
+    <div *ngIf="incomingCall" class="alert alert-info text-center mt-4">
+      <h4>Incoming Call!</h4>
+      <button class="btn btn-success mx-2" (click)="startCall()">Accept</button>
+      <button class="btn btn-danger mx-2" (click)="rejectCall()">Reject</button>
+    </div>
+  
+    <!-- Call Rejected Notification -->
+    <div *ngIf="isCallRejected" class="alert alert-warning text-center mt-4">
+      <h4>Your call was rejected.</h4>
+    </div>
+  </div>
+  

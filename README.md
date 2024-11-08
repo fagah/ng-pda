@@ -1,27 +1,36 @@
-# NgPda
+Passenger Side
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 18.2.4.
+Offer (sent to agent): Initiates the WebRTC connection.
+ICE Candidate (sent to agent): Sends ICE candidates during the connection process.
+Answer (received from agent): Sets the remote description after the agent accepts the offer.
+Call Rejected (received from agent): Displays a rejection message if the agent declines.
+Hangup (sent to end the call).
 
-## Development server
+## Explanation of Key Methods Passenger
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.
+# Initiate the call
 
-## Code scaffolding
+Start a call by sending an offer to the agent.
+Send ICE candidates to the agent as they are generated.
+Receive and handle an answer from the agent.
+Respond to a call rejection.
+End the call with a hangup notification.
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+Agent Side
 
-## Build
+Offer (received from passenger): The agent receives the offer from the passenger.
+Answer (sent to passenger): The agent responds to the passenger's offer with an SDP answer.
+ICE Candidate (sent to passenger): Sends ICE candidates during the connection process.
+Call Rejected (sent to passenger): Sends a rejection message if the agent declines.
+Hangup (sent to end the call).
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.
 
-## Running unit tests
+https://stackblitz.com/edit/angular-webrtc?file=app%2Fmeeting%2Fmeeting.component.ts
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
 
-## Running end-to-end tests
+Testing the Complete Flow
+the general flow should be:
 
-Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.
-
-## Further help
-
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Agent initiates call → Offer sent to passenger
+Passenger receives offer → Creates an answer and sends it back
+Both peers exchange ICE candidates

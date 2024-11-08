@@ -2,8 +2,8 @@ import { Injectable } from '@angular/core';
 import { Subject } from 'rxjs';
 import { webSocket, WebSocketSubject } from 'rxjs/webSocket';
 
-export const WS_ENDPOINT = 'ws://ec2-15-237-118-140.eu-west-3.compute.amazonaws.com:8081/pda-ws';
-
+// export const WS_ENDPOINT = 'ws://ec2-15-237-118-140.eu-west-3.compute.amazonaws.com:8081/pda-ws';
+export const WS_ENDPOINT = 'ws://192.168.2.238:8081/pda-ws';
 export interface IMessage {
   type: string;
   data: any;
@@ -17,6 +17,10 @@ export class DataService {
 
   private messagesSubject = new Subject<IMessage>();
   public messages$ = this.messagesSubject.asObservable();
+
+  constructor() {
+    this.connect();
+  }
 
   /**
    * Creates a new WebSocket subject and send it to the messages subject
@@ -40,6 +44,13 @@ export class DataService {
   sendMessage(msg: IMessage): void {
     console.log('sending message: ' + msg.type);
     this.socket$?.next(msg);
+  }
+
+  public disconnect(): void {
+    if (this.socket$) {
+      this.socket$.complete();
+      this.socket$ = undefined;
+    }
   }
 
   /**

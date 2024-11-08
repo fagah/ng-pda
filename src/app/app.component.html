@@ -1,27 +1,46 @@
-<div class="container">
-  <div class="row mb-3">
-    <div class="col-md-6">
-      <div class="card">
-        <div class="card-body">
-          <p class="video-description">Local:</p>
-          <video #local_video autoplay muted class="video-feed"></video>
+<!--<div class="container-fluid p-3">
+  
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title">local video 
+              @if( stationId && stationGroup ){
+                <span class="badge rounded-pill text-bg-primary">{{stationId}}/{{stationGroup}}</span>
+              }
+            </h5>
+          </div>
+          <div class="card-body">
+            <video #local_video autoplay muted class="video-feed"></video>
+          </div>
+          <div class="card-footer">
+            <button [ngClass]="{'btn-danger': !isCameraOn, 'btn-secondary': isCameraOn}" class="btn rounded-circle" (click)="toggleCamera()">
+              <fa-icon [icon]="isCameraOn ? 'video' : 'video-slash'"></fa-icon>
+            </button>
+            <button [ngClass]="{'btn-danger': !isMicOn, 'btn-secondary': isMicOn}" class="btn rounded-circle" (click)="toggleMic()">
+              <fa-icon [icon]="isMicOn ? 'microphone' : 'microphone-slash'"></fa-icon>
+            </button>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title">remote video</h5>
+          </div>
+          <div class="card-body">
+            <video #received_video autoplay class="video-feed"></video>
+          </div>
         </div>
       </div>
     </div>
-    <div class="col-md-6">
-      <div class="card">
-        <div class="card-body">
-          <p class="video-description">Remote:</p>
-          <video #received_video autoplay class="video-feed"></video>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <div class="d-flex justify-content-center mb-3">
-    <button class="btn btn-primary me-2" (click)="startLocalVideo()" [disabled]="localVideoActive">Start Local</button>
-    <button class="btn btn-secondary me-2" (click)="pauseLocalVideo()" [disabled]="!localVideoActive">Stop Local</button>
-    <button class="btn btn-success me-2" (click)="call()" [disabled]="inCall || !localVideoActive">Call</button>
-    <button class="btn btn-danger" (click)="hangUp()" [disabled]="!inCall">Hang Up</button>
-  </div>
+    <div class="d-flex justify-content-center mb-3">
+      <button class="btn btn-primary me-2" (click)="startLocalVideo()" [disabled]="localVideoActive">Start Local</button>
+      <button class="btn btn-secondary me-2" (click)="pauseLocalVideo()" [disabled]="!localVideoActive">Stop Local</button>
+      <button class="btn btn-success me-2" (click)="call()" [disabled]="inCall || !localVideoActive">Call</button>
+      <button class="btn btn-danger" (click)="hangUp()" [disabled]="!inCall">Hang Up</button>
+    </div>
+  
 </div>
+-->
+<router-outlet></router-outlet>

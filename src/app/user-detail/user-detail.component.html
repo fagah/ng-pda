@@ -1,0 +1,21 @@
+<div class="modal-header">
+    <h4 class="modal-title">User Detail</h4>
+</div>
+<div class="modal-body">
+    <form [formGroup]="userDetailForm" (ngSubmit)="save()">
+        <div class="form-group mb-2">
+            <label for="stationId">Station ID</label>
+            <input type="text" class="form-control" id="stationId" formControlName="stationId">
+        </div>
+        <div class="form-group">
+            <label for="stationGroup">Station Group</label>
+            <select formControlName="stationGroup" class="form-control">
+                <option *ngFor="let group of stationGroups" [value]="group.id">{{group.name}}</option>
+            </select>
+        </div>
+    </form>
+</div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="cancel()">Cancel</button>
+    <button type="button" class="btn btn-primary" (click)="save()" [disabled]="userDetailForm.invalid">Save</button>
+</div>
